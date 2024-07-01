@@ -20,17 +20,33 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        h1 {
+        h1, h2 {
             color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
         }
         label {
             display: block;
             margin-top: 10px;
         }
-        input {
-            width: 100%;
+        input[type="number"] {
+            width: 100px;
             padding: 8px;
             margin-top: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
         }
         button {
             display: block;
@@ -57,14 +73,44 @@
 <body>
     <div class="container">
         <h1>Employee Prediction Dashboard</h1>
+        
+        <h2>Historical Data</h2>
+        <table id="historicalData">
+            <tr>
+                <th>Year</th>
+                <th>Total Start</th>
+                <th>Total End</th>
+                <th>Retention</th>
+                <th>SCAD Turnover</th>
+                <th>New Hire</th>
+                <th>People Leave</th>
+                <th>Growth</th>
+            </tr>
+            <!-- Data rows will be inserted here by JavaScript -->
+        </table>
+
+        <h2>Predict Next Year</h2>
         <label for="currentTotal">Current Total Employees:</label>
         <input type="number" id="currentTotal" value="3110">
         
-        <label for="hiringRate">Projected Hiring Rate (%):</label>
-        <input type="number" id="hiringRate" min="0" max="100" step="0.1" value="13.5">
+        <label for="hiringChoice">Hiring Input:</label>
+        <select id="hiringChoice" onchange="toggleHiringInput()">
+            <option value="rate">Hiring Rate</option>
+            <option value="number">Hiring Number</option>
+        </select>
         
-        <label for="turnoverRate">Expected Turnover Rate (%):</label>
-        <input type="number" id="turnoverRate" min="0" max="100" step="0.1" value="3">
+        <div id="hiringRateDiv">
+            <label for="hiringRate">Projected Hiring Rate (%): <span id="hiringRateValue">13.5</span></label>
+            <input type="range" id="hiringRate" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringRate()">
+        </div>
+        
+        <div id="hiringNumberDiv" style="display:none;">
+            <label for="hiringNumber">Projected New Hires:</label>
+            <input type="number" id="hiringNumber" value="420">
+        </div>
+        
+        <label for="turnoverRate">Expected Turnover Rate (%): <span id="turnoverRateValue">3</span></label>
+        <input type="range" id="turnoverRate" min="0" max="20" step="0.1" value="3" oninput="updateTurnoverRate()">
         
         <button onclick="predictEmployees()">Predict Next Year</button>
         
@@ -72,12 +118,48 @@
     </div>
 
     <script>
+        const historicalData = [
+            { year: "2022-2023", totalStart: 2984, totalEnd: 2783, retention: "93%", scadTurnover: "7%", newHire: "-", peopleLeave: "-", growth: "-201" },
+            { year: "2023-2024", totalStart: 3216, totalEnd: 3110, retention: "97%", scadTurnover: "3%", newHire: 433, peopleLeave: 106, growth: "8%" }
+        ];
+
+        function populateHistoricalData() {
+            const table = document.getElementById('historicalData');
+            historicalData.forEach(row => {
+                const tr = table.insertRow();
+                Object.values(row).forEach(value => {
+                    const td = tr.insertCell();
+                    td.textContent = value;
+                });
+            });
+        }
+
+        function toggleHiringInput() {
+            const choice = document.getElementById('hiringChoice').value;
+            document.getElementById('hiringRateDiv').style.display = choice === 'rate' ? 'block' : 'none';
+            document.getElementById('hiringNumberDiv').style.display = choice === 'number' ? 'block' : 'none';
+        }
+
+        function updateHiringRate() {
+            document.getElementById('hiringRateValue').textContent = document.getElementById('hiringRate').value;
+        }
+
+        function updateTurnoverRate() {
+            document.getElementById('turnoverRateValue').textContent = document.getElementById('turnoverRate').value;
+        }
+
         function predictEmployees() {
             const currentTotal = parseFloat(document.getElementById('currentTotal').value);
-            const hiringRate = parseFloat(document.getElementById('hiringRate').value) / 100;
             const turnoverRate = parseFloat(document.getElementById('turnoverRate').value) / 100;
 
-            const newHires = Math.round(currentTotal * hiringRate);
+            let newHires;
+            if (document.getElementById('hiringChoice').value === 'rate') {
+                const hiringRate = parseFloat(document.getElementById('hiringRate').value) / 100;
+                newHires = Math.round(currentTotal * hiringRate);
+            } else {
+                newHires = parseInt(document.getElementById('hiringNumber').value);
+            }
+
             const leavers = Math.round(currentTotal * turnoverRate);
             const nextYearTotal = currentTotal + newHires - leavers;
             const growthRate = ((nextYearTotal - currentTotal) / currentTotal * 100).toFixed(1);
@@ -91,6 +173,11 @@
                 <p>Growth Rate: ${growthRate}%</p>
             `;
         }
+
+        // Initialize the page
+        populateHistoricalData();
+        updateHiringRate();
+        updateTurnoverRate();
     </script>
 </body>
 </html>
