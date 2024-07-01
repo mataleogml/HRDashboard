@@ -4,9 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Prediction Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            border: none;
+            background-color: transparent;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .parameters-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            background-color: rgba(200, 200, 200, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .parameter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .parameter-item label {
+            margin-bottom: 5px;
+        }
+        #predictionRow {
+            background-color: #e7f3ff;
+        }
+        .positive-growth {
+            color: green;
+        }
+        .negative-growth {
+            color: red;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -15,12 +90,12 @@
         <table id="dataTable">
             <tr>
                 <th>Year</th>
-                <th>Total Start</th>
-                <th>Total End</th>
+                <th>Start</th>
+                <th>End</th>
                 <th>Retention</th>
-                <th>SCAD Turnover</th>
-                <th>New Hire</th>
-                <th>People Leave</th>
+                <th>Turnover</th>
+                <th>Joining</th>
+                <th>Leaving</th>
                 <th>Growth</th>
             </tr>
             <!-- Data rows will be inserted here by JavaScript -->
@@ -32,31 +107,228 @@
                 <label for="currentTotal">Current Total Employees:</label>
                 <input type="number" id="currentTotal" value="3110" oninput="updateCurrentTotal('input')">
                 <input type="range" id="currentTotalSlider" min="0" max="5000" value="3110" oninput="updateCurrentTotal('slider')">
-                <i class="fa-solid fa-arrow-rotate-left" onclick="resetParameter('currentTotal')"></i>
+                <button onclick="resetParameter('currentTotal')">Reset</button>
             </div>
             <div class="parameter-item">
                 <label for="hiringRateInput">Projected Hiring Rate (%):</label>
                 <input type="number" id="hiringRateInput" value="13.5" step="0.1" oninput="updateHiringInputs('rate')">
                 <input type="range" id="hiringRateSlider" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringInputs('rateSlider')">
-                <i class="fa-solid fa-arrow-rotate-left" onclick="resetParameter('hiringRate')"></i>
+                <button onclick="resetParameter('hiringRate')">Reset</button>
             </div>
             <div class="parameter-item">
                 <label for="hiringNumber">Projected New Hires:</label>
                 <input type="number" id="hiringNumber" value="420" oninput="updateHiringInputs('number')">
                 <input type="range" id="hiringNumberSlider" min="0" max="1000" value="420" oninput="updateHiringInputs('numberSlider')">
-                <i class="fa-solid fa-arrow-rotate-left" onclick="resetParameter('hiringNumber')"></i>
+                <button onclick="resetParameter('hiringNumber')">Reset</button>
             </div>
             <div class="parameter-item">
                 <label for="turnoverRateInput">Expected Turnover Rate (%):</label>
                 <input type="number" id="turnoverRateInput" value="3" step="0.1" oninput="updateTurnoverRate('input')">
                 <input type="range" id="turnoverRateSlider" min="0" max="20" step="0.1" value="3" oninput="updateTurnoverRate('slider')">
-                <i class="fa-solid fa-arrow-rotate-left" onclick="resetParameter('turnoverRate')"></i>
+                <button onclick="resetParameter('turnoverRate')">Reset</button>
             </div>
         </div>
         <button onclick="resetDashboard()">Reset All</button>
         <button onclick="downloadCSV()">Download CSV</button>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const historicalData = [
+            { year: "2022-2023", totalStart: 2984, totalEnd: 2783, retention: 93, scadTurnover: 7, newHire: 0, peopleLeave: 201, growth: "0%" },
+            { year: "2023-2024", totalStart: 3216, totalEnd: 3110, retention: 97, scadTurnover: 3, newHire: 433, peopleLeave: 106, growth: "8%" }
+        ];
+
+        function populateData() {
+            const table = document.getElementById('dataTable');
+            // Clear existing rows except header
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+            historicalData.forEach(row => {
+                const tr = table.insertRow();
+                Object.values(row).forEach(value => {
+                    const td = tr.insertCell();
+                    td.textContent = value;
+                });
+            });
+            // Add prediction row
+            const predictionRow = table.insertRow();
+            predictionRow.id = 'predictionRow';
+            for (let i = 0; i < 8; i++) {
+                const td = predictionRow.insertCell();
+                if (i > 0 && i < 7) { // Make cells 1-6 editable
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.addEventListener('input', updatePredictionFromTable);
+                    td.appendChild(input);
+                }
+            }
+            updatePrediction();
+        }
+
+        function updateCurrentTotal(source) {
+            const inputElem = document.getElementById('currentTotal');
+            const sliderElem = document.getElementById('currentTotalSlider');
+            if (source === 'input') {
+                sliderElem.value = inputElem.value;
+            } else {
+                inputElem.value = sliderElem.value;
+            }
+            updatePrediction();
+        }
+
+        function updateHiringInputs(source) {
+            const currentTotal = parseFloat(document.getElementById('currentTotal').value);
+            const rateInputElem = document.getElementById('hiringRateInput');
+            const rateSliderElem = document.getElementById('hiringRateSlider');
+            const numberInputElem = document.getElementById('hiringNumber');
+            const numberSliderElem = document.getElementById('hiringNumberSlider');
+
+            if (source === 'rate' || source === 'rateSlider') {
+                const hiringRate = parseFloat(source === 'rate' ? rateInputElem.value : rateSliderElem.value);
+                const hiringNumber = Math.round(currentTotal * hiringRate / 100);
+                rateInputElem.value = rateSliderElem.value = hiringRate;
+                numberInputElem.value = numberSliderElem.value = hiringNumber;
+            } else {
+                const hiringNumber = parseInt(source === 'number' ? numberInputElem.value : numberSliderElem.value);
+                const hiringRate = (hiringNumber / currentTotal * 100).toFixed(1);
+                numberInputElem.value = numberSliderElem.value = hiringNumber;
+                rateInputElem.value = rateSliderElem.value = hiringRate;
+            }
+            updatePrediction();
+        }
+
+        function updateTurnoverRate(source) {
+            const inputElem = document.getElementById('turnoverRateInput');
+            const sliderElem = document.getElementById('turnoverRateSlider');
+            if (source === 'input') {
+                sliderElem.value = inputElem.value;
+            } else {
+                inputElem.value = sliderElem.value;
+            }
+            updatePrediction();
+        }
+
+        function updatePrediction() {
+            const predictionRow = document.getElementById('predictionRow');
+            const currentTotal = parseFloat(document.getElementById('currentTotal').value);
+            const hiringNumber = parseInt(document.getElementById('hiringNumber').value);
+            const turnoverRate = parseFloat(document.getElementById('turnoverRateInput').value) / 100;
+
+            const totalStart = currentTotal;
+            const leavers = Math.round(currentTotal * turnoverRate);
+            const totalEnd = currentTotal + hiringNumber - leavers;
+            const growthRate = ((totalEnd - totalStart) / totalStart * 100).toFixed(1);
+            const retentionRate = (100 - turnoverRate * 100).toFixed(1);
+
+            predictionRow.cells[0].textContent = "2024-2025 (Predicted)";
+            predictionRow.cells[1].firstChild.value = totalStart;
+            predictionRow.cells[2].firstChild.value = totalEnd;
+            predictionRow.cells[3].firstChild.value = retentionRate;
+            predictionRow.cells[4].firstChild.value = (turnoverRate * 100).toFixed(1);
+            predictionRow.cells[5].firstChild.value = hiringNumber;
+            predictionRow.cells[6].firstChild.value = leavers;
+            predictionRow.cells[7].textContent = growthRate + '%';
+            predictionRow.cells[7].className = parseFloat(growthRate) >= 0 ? 'positive-growth' : 'negative-growth';
+
+            updateGrowthColors();
+        }
+
+        function updatePredictionFromTable() {
+            const predictionRow = document.getElementById('predictionRow');
+            const totalStart = parseFloat(predictionRow.cells[1].firstChild.value);
+            const totalEnd = parseFloat(predictionRow.cells[2].firstChild.value);
+            const retention = parseFloat(predictionRow.cells[3].firstChild.value);
+            const scadTurnover = parseFloat(predictionRow.cells[4].firstChild.value);
+            const newHire = parseFloat(predictionRow.cells[5].firstChild.value);
+            const peopleLeave = parseFloat(predictionRow.cells[6].firstChild.value);
+
+            const growthRate = ((totalEnd - totalStart) / totalStart * 100).toFixed(1);
+            predictionRow.cells[7].textContent = growthRate + '%';
+            predictionRow.cells[7].className = parseFloat(growthRate) >= 0 ? 'positive-growth' : 'negative-growth';
+
+            document.getElementById('currentTotal').value = totalStart;
+            document.getElementById('currentTotalSlider').value = totalStart;
+            document.getElementById('hiringNumber').value = newHire;
+            document.getElementById('hiringNumberSlider').value = newHire;
+            document.getElementById('hiringRateInput').value = (newHire / totalStart * 100).toFixed(1);
+            document.getElementById('hiringRateSlider').value = (newHire / totalStart * 100).toFixed(1);
+            document.getElementById('turnoverRateInput').value = scadTurnover;
+            document.getElementById('turnoverRateSlider').value = scadTurnover;
+
+            // Update linked fields
+            predictionRow.cells[4].firstChild.value = (100 - retention).toFixed(1);
+            predictionRow.cells[6].firstChild.value = totalStart + newHire - totalEnd;
+
+            updateGrowthColors();
+        }
+
+        function updateGrowthColors() {
+            const table = document.getElementById('dataTable');
+            for (let i = 1; i < table.rows.length; i++) {
+                const growthCell = table.rows[i].cells[7];
+                const growthValue = parseFloat(growthCell.textContent);
+                growthCell.className = growthValue >= 0 ? 'positive-growth' : 'negative-growth';
+            }
+        }
+
+        function resetParameter(param) {
+            switch(param) {
+                case 'currentTotal':
+                    document.getElementById('currentTotal').value = 3110;
+                    document.getElementById('currentTotalSlider').value = 3110;
+                    break;
+                case 'hiringRate':
+                    document.getElementById('hiringRateInput').value = 13.5;
+                    document.getElementById('hiringRateSlider').value = 13.5;
+                    break;
+                case 'hiringNumber':
+                    document.getElementById('hiringNumber').value = 420;
+                    document.getElementById('hiringNumberSlider').value = 420;
+                    break;
+                case 'turnoverRate':
+                    document.getElementById('turnoverRateInput').value = 3;
+                    document.getElementById('turnoverRateSlider').value = 3;
+                    break;
+            }
+            updatePrediction();
+        }
+
+        function resetDashboard() {
+            resetParameter('currentTotal');
+            resetParameter('hiringRate');
+            resetParameter('hiringNumber');
+            resetParameter('turnoverRate');
+        }
+
+        function downloadCSV() {
+            const table = document.getElementById('dataTable');
+            let csv = [];
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = [], cols = table.rows[i].cells;
+                for (let j = 0; j < cols.length; j++) {
+                    if (i > 0 && i < table.rows.length - 1) {
+                        row.push(cols[j].innerText);
+                    } else if (i === table.rows.length - 1) {
+                        row.push(j === 0 ? cols[j].innerText : (cols[j].firstChild ? cols[j].firstChild.value : cols[j].innerText));
+                    } else {
+                        row.push(cols[j].innerText);
+                    }
+                }
+                csv.push(row.join(","));
+            }
+            const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `employee_data_${new Date().toISOString()}.csv`;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+        }
+
+        // Initialize the page
+        populateData();
+        updateHiringInputs('rate');
+    </script>
 </body>
 </html>
