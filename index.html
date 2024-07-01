@@ -69,6 +69,18 @@
         .negative-growth {
             color: red;
         }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -120,6 +132,8 @@
                 <input type="range" id="turnoverRateSlider" min="0" max="20" step="0.1" value="3" oninput="updateTurnoverRate('slider')">
             </div>
         </div>
+        <button onclick="resetDashboard()">Reset Dashboard</button>
+        <button onclick="downloadCSV()">Download CSV</button>
     </div>
 
     <script>
@@ -149,7 +163,7 @@
                 if (i > 0 && i < 7) { // Make cells 1-6 editable
                     const input = document.createElement('input');
                     input.type = 'number';
-                    input.addEventListener('input', updatePrediction);
+                    input.addEventListener('input', updatePredictionFromTable);
                     td.appendChild(input);
                 }
             }
@@ -221,13 +235,72 @@
             predictionRow.cells[7].textContent = growthRate + '%';
             predictionRow.cells[7].className = parseFloat(growthRate) >= 0 ? 'positive-growth' : 'negative-growth';
 
-            // Update growth color for historical data
+            updateGrowthColors();
+        }
+
+        function updatePredictionFromTable() {
+            const predictionRow = document.getElementById('predictionRow');
+            const totalStart = parseFloat(predictionRow.cells[1].firstChild.value);
+            const totalEnd = parseFloat(predictionRow.cells[2].firstChild.value);
+            const retention = parseFloat(predictionRow.cells[3].firstChild.value);
+            const scadTurnover = parseFloat(predictionRow.cells[4].firstChild.value);
+            const newHire = parseFloat(predictionRow.cells[5].firstChild.value);
+            const peopleLeave = parseFloat(predictionRow.cells[6].firstChild.value);
+
+            const growthRate = ((totalEnd - totalStart) / totalStart * 100).toFixed(1);
+            predictionRow.cells[7].textContent = growthRate + '%';
+            predictionRow.cells[7].className = parseFloat(growthRate) >= 0 ? 'positive-growth' : 'negative-growth';
+
+            document.getElementById('currentTotal').value = totalStart;
+            document.getElementById('currentTotalSlider').value = totalStart;
+            document.getElementById('hiringNumber').value = newHire;
+            document.getElementById('hiringNumberSlider').value = newHire;
+            document.getElementById('hiringRateInput').value = (newHire / totalStart * 100).toFixed(1);
+            document.getElementById('hiringRateSlider').value = (newHire / totalStart * 100).toFixed(1);
+            document.getElementById('turnoverRateInput').value = scadTurnover;
+            document.getElementById('turnoverRateSlider').value = scadTurnover;
+
+            updateGrowthColors();
+        }
+
+        function updateGrowthColors() {
             const table = document.getElementById('dataTable');
             for (let i = 1; i < table.rows.length - 1; i++) {
                 const growthCell = table.rows[i].cells[7];
                 const growthValue = parseFloat(growthCell.textContent);
                 growthCell.className = growthValue >= 0 ? 'positive-growth' : 'negative-growth';
             }
+        }
+
+        function resetDashboard() {
+            document.getElementById('currentTotal').value = 3110;
+            document.getElementById('currentTotalSlider').value = 3110;
+            document.getElementById('hiringRateInput').value = 13.5;
+            document.getElementById('hiringRateSlider').value = 13.5;
+            document.getElementById('hiringNumber').value = 420;
+            document.getElementById('hiringNumberSlider').value = 420;
+            document.getElementById('turnoverRateInput').value = 3;
+            document.getElementById('turnoverRateSlider').value = 3;
+            updatePrediction();
+        }
+
+        function downloadCSV() {
+            const table = document.getElementById('dataTable');
+            let csv = [];
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = [], cols = table.rows[i].cells;
+                for (let j = 0; j < cols.length; j++) {
+                    row.push(cols[j].innerText);
+                }
+                csv.push(row.join(","));
+            }
+            const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `employee_data_${new Date().toISOString()}.csv`;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
         }
 
         // Initialize the page
