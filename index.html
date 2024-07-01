@@ -13,7 +13,7 @@
             background-color: #f4f4f4;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: auto;
             background: white;
             padding: 20px;
@@ -36,39 +36,38 @@
         th {
             background-color: #f2f2f2;
         }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input[type="number"] {
-            width: 100px;
-            padding: 8px;
-            margin-top: 5px;
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            border: none;
+            background-color: transparent;
         }
         input[type="range"] {
             width: 100%;
         }
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .input-group {
-            display: flex;
-            align-items: center;
+        .parameters-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
+            background-color: rgba(200, 200, 200, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .parameter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .parameter-item label {
+            margin-bottom: 5px;
         }
         #predictionRow {
             background-color: #e7f3ff;
+        }
+        .positive-growth {
+            color: green;
+        }
+        .negative-growth {
+            color: red;
         }
     </style>
 </head>
@@ -91,42 +90,59 @@
         </table>
 
         <h2>Adjust Prediction Parameters</h2>
-        <div class="input-group">
-            <label for="currentTotal">Current Total Employees:</label>
-            <input type="number" id="currentTotal" value="3110" oninput="updatePrediction()">
-        </div>
-        
-        <div class="input-group">
-            <label for="hiringRate">Projected Hiring Rate (%):</label>
-            <input type="range" id="hiringRate" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringInputs()">
-            <span id="hiringRateValue">13.5%</span>
-        </div>
-        
-        <div class="input-group">
-            <label for="hiringNumber">Projected New Hires:</label>
-            <input type="number" id="hiringNumber" value="420" oninput="updateHiringInputs()">
-        </div>
-        
-        <div class="input-group">
-            <label for="turnoverRate">Expected Turnover Rate (%):</label>
-            <input type="range" id="turnoverRate" min="0" max="20" step="0.1" value="3" oninput="updatePrediction()">
-            <span id="turnoverRateValue">3%</span>
+        <div class="parameters-grid">
+            <div class="parameter-item">
+                <label for="currentTotal">Current Total Employees:</label>
+                <input type="number" id="currentTotal" value="3110" oninput="updatePrediction()">
+            </div>
+            <div class="parameter-item">
+                <label for="hiringRateInput">Projected Hiring Rate (%):</label>
+                <input type="number" id="hiringRateInput" value="13.5" step="0.1" oninput="updateHiringInputs('rate')">
+            </div>
+            <div class="parameter-item">
+                <label for="hiringNumber">Projected New Hires:</label>
+                <input type="number" id="hiringNumber" value="420" oninput="updateHiringInputs('number')">
+            </div>
+            <div class="parameter-item">
+                <label for="turnoverRateInput">Expected Turnover Rate (%):</label>
+                <input type="number" id="turnoverRateInput" value="3" step="0.1" oninput="updateTurnoverRate()">
+            </div>
+            <div class="parameter-item">
+                <input type="range" id="currentTotalSlider" min="0" max="5000" value="3110" oninput="updateCurrentTotal()">
+            </div>
+            <div class="parameter-item">
+                <input type="range" id="hiringRate" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringInputs('rate')">
+            </div>
+            <div class="parameter-item">
+                <input type="range" id="hiringNumberSlider" min="0" max="1000" value="420" oninput="updateHiringInputs('number')">
+            </div>
+            <div class="parameter-item">
+                <input type="range" id="turnoverRate" min="0" max="20" step="0.1" value="3" oninput="updateTurnoverRate()">
+            </div>
         </div>
     </div>
 
     <script>
-        const historicalData = [
-            { year: "2022-2023", totalStart: 2984, totalEnd: 2783, retention: "93%", scadTurnover: "7%", newHire: "-", peopleLeave: "-", growth: "-201" },
-            { year: "2023-2024", totalStart: 3216, totalEnd: 3110, retention: "97%", scadTurnover: "3%", newHire: 433, peopleLeave: 106, growth: "8%" }
+        let historicalData = [
+            { year: "2022-2023", totalStart: 2984, totalEnd: 2783, retention: 93, scadTurnover: 7, newHire: 0, peopleLeave: 0, growth: -201 },
+            { year: "2023-2024", totalStart: 3216, totalEnd: 3110, retention: 97, scadTurnover: 3, newHire: 433, peopleLeave: 106, growth: 8 }
         ];
 
         function populateData() {
             const table = document.getElementById('dataTable');
-            historicalData.forEach(row => {
+            // Clear existing rows except header
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+            historicalData.forEach((row, index) => {
                 const tr = table.insertRow();
-                Object.values(row).forEach(value => {
+                Object.entries(row).forEach(([key, value], cellIndex) => {
                     const td = tr.insertCell();
-                    td.textContent = value;
+                    const input = document.createElement('input');
+                    input.type = cellIndex === 0 ? 'text' : 'number';
+                    input.value = value;
+                    input.addEventListener('input', () => updateHistoricalData(index, key, input.value));
+                    td.appendChild(input);
                 });
             });
             // Add prediction row
@@ -138,43 +154,75 @@
             updatePrediction();
         }
 
-        function updateHiringInputs() {
+        function updateHistoricalData(rowIndex, key, value) {
+            historicalData[rowIndex][key] = key === 'year' ? value : parseFloat(value);
+            updatePrediction();
+        }
+
+        function updateHiringInputs(source) {
             const currentTotal = parseFloat(document.getElementById('currentTotal').value);
-            const hiringRate = parseFloat(document.getElementById('hiringRate').value);
-            const hiringNumber = Math.round(currentTotal * hiringRate / 100);
+            let hiringRate, hiringNumber;
 
-            document.getElementById('hiringRateValue').textContent = hiringRate.toFixed(1) + '%';
-            document.getElementById('hiringNumber').value = hiringNumber;
+            if (source === 'rate') {
+                hiringRate = parseFloat(document.getElementById('hiringRateInput').value);
+                hiringNumber = Math.round(currentTotal * hiringRate / 100);
+                document.getElementById('hiringNumber').value = hiringNumber;
+                document.getElementById('hiringNumberSlider').value = hiringNumber;
+            } else {
+                hiringNumber = parseInt(document.getElementById('hiringNumber').value);
+                hiringRate = (hiringNumber / currentTotal * 100).toFixed(1);
+                document.getElementById('hiringRateInput').value = hiringRate;
+            }
 
+            document.getElementById('hiringRate').value = hiringRate;
+            updatePrediction();
+        }
+
+        function updateCurrentTotal() {
+            const value = document.getElementById('currentTotalSlider').value;
+            document.getElementById('currentTotal').value = value;
+            updatePrediction();
+        }
+
+        function updateTurnoverRate() {
+            const value = document.getElementById('turnoverRate').value;
+            document.getElementById('turnoverRateInput').value = value;
             updatePrediction();
         }
 
         function updatePrediction() {
             const currentTotal = parseFloat(document.getElementById('currentTotal').value);
             const hiringNumber = parseInt(document.getElementById('hiringNumber').value);
-            const turnoverRate = parseFloat(document.getElementById('turnoverRate').value) / 100;
+            const turnoverRate = parseFloat(document.getElementById('turnoverRateInput').value) / 100;
 
             const leavers = Math.round(currentTotal * turnoverRate);
             const nextYearTotal = currentTotal + hiringNumber - leavers;
             const growthRate = ((nextYearTotal - currentTotal) / currentTotal * 100).toFixed(1);
-            const retentionRate = (100 - turnoverRate * 100).toFixed(1) + '%';
+            const retentionRate = (100 - turnoverRate * 100).toFixed(1);
 
             const predictionRow = document.getElementById('predictionRow');
             predictionRow.cells[0].textContent = "2024-2025 (Predicted)";
             predictionRow.cells[1].textContent = currentTotal;
             predictionRow.cells[2].textContent = nextYearTotal;
-            predictionRow.cells[3].textContent = retentionRate;
-            predictionRow.cells[4].textContent = turnoverRate * 100 + '%';
+            predictionRow.cells[3].textContent = retentionRate + '%';
+            predictionRow.cells[4].textContent = (turnoverRate * 100).toFixed(1) + '%';
             predictionRow.cells[5].textContent = hiringNumber;
             predictionRow.cells[6].textContent = leavers;
             predictionRow.cells[7].textContent = growthRate + '%';
+            predictionRow.cells[7].className = parseFloat(growthRate) >= 0 ? 'positive-growth' : 'negative-growth';
 
-            document.getElementById('turnoverRateValue').textContent = (turnoverRate * 100).toFixed(1) + '%';
+            // Update growth color for historical data
+            const table = document.getElementById('dataTable');
+            for (let i = 1; i < table.rows.length - 1; i++) {
+                const growthCell = table.rows[i].cells[7].firstChild;
+                const growthValue = parseFloat(growthCell.value);
+                growthCell.className = growthValue >= 0 ? 'positive-growth' : 'negative-growth';
+            }
         }
 
         // Initialize the page
         populateData();
-        updateHiringInputs();
+        updateHiringInputs('rate');
     </script>
 </body>
 </html>
