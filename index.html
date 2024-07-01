@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Prediction Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7e7e7;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Employee Prediction Dashboard</h1>
+        <label for="currentTotal">Current Total Employees:</label>
+        <input type="number" id="currentTotal" value="3110">
+        
+        <label for="hiringRate">Projected Hiring Rate (%):</label>
+        <input type="number" id="hiringRate" min="0" max="100" step="0.1" value="13.5">
+        
+        <label for="turnoverRate">Expected Turnover Rate (%):</label>
+        <input type="number" id="turnoverRate" min="0" max="100" step="0.1" value="3">
+        
+        <button onclick="predictEmployees()">Predict Next Year</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function predictEmployees() {
+            const currentTotal = parseFloat(document.getElementById('currentTotal').value);
+            const hiringRate = parseFloat(document.getElementById('hiringRate').value) / 100;
+            const turnoverRate = parseFloat(document.getElementById('turnoverRate').value) / 100;
+
+            const newHires = Math.round(currentTotal * hiringRate);
+            const leavers = Math.round(currentTotal * turnoverRate);
+            const nextYearTotal = currentTotal + newHires - leavers;
+            const growthRate = ((nextYearTotal - currentTotal) / currentTotal * 100).toFixed(1);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h3>Predictions for Next Year:</h3>
+                <p>New Hires: ${newHires}</p>
+                <p>Employees Leaving: ${leavers}</p>
+                <p>Total Employees: ${nextYearTotal}</p>
+                <p>Growth Rate: ${growthRate}%</p>
+            `;
+        }
+    </script>
+</body>
+</html>
