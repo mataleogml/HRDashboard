@@ -13,7 +13,7 @@
             background-color: #f4f4f4;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: auto;
             background: white;
             padding: 20px;
@@ -62,11 +62,13 @@
         button:hover {
             background-color: #45a049;
         }
-        #results {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #e7e7e7;
-            border-radius: 5px;
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #predictionRow {
+            background-color: #e7f3ff;
         }
     </style>
 </head>
@@ -74,8 +76,7 @@
     <div class="container">
         <h1>Employee Prediction Dashboard</h1>
         
-        <h2>Historical Data</h2>
-        <table id="historicalData">
+        <table id="dataTable">
             <tr>
                 <th>Year</th>
                 <th>Total Start</th>
@@ -89,32 +90,28 @@
             <!-- Data rows will be inserted here by JavaScript -->
         </table>
 
-        <h2>Predict Next Year</h2>
-        <label for="currentTotal">Current Total Employees:</label>
-        <input type="number" id="currentTotal" value="3110">
-        
-        <label for="hiringChoice">Hiring Input:</label>
-        <select id="hiringChoice" onchange="toggleHiringInput()">
-            <option value="rate">Hiring Rate</option>
-            <option value="number">Hiring Number</option>
-        </select>
-        
-        <div id="hiringRateDiv">
-            <label for="hiringRate">Projected Hiring Rate (%): <span id="hiringRateValue">13.5</span></label>
-            <input type="range" id="hiringRate" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringRate()">
+        <h2>Adjust Prediction Parameters</h2>
+        <div class="input-group">
+            <label for="currentTotal">Current Total Employees:</label>
+            <input type="number" id="currentTotal" value="3110" oninput="updatePrediction()">
         </div>
         
-        <div id="hiringNumberDiv" style="display:none;">
+        <div class="input-group">
+            <label for="hiringRate">Projected Hiring Rate (%):</label>
+            <input type="range" id="hiringRate" min="0" max="50" step="0.1" value="13.5" oninput="updateHiringInputs()">
+            <span id="hiringRateValue">13.5%</span>
+        </div>
+        
+        <div class="input-group">
             <label for="hiringNumber">Projected New Hires:</label>
-            <input type="number" id="hiringNumber" value="420">
+            <input type="number" id="hiringNumber" value="420" oninput="updateHiringInputs()">
         </div>
         
-        <label for="turnoverRate">Expected Turnover Rate (%): <span id="turnoverRateValue">3</span></label>
-        <input type="range" id="turnoverRate" min="0" max="20" step="0.1" value="3" oninput="updateTurnoverRate()">
-        
-        <button onclick="predictEmployees()">Predict Next Year</button>
-        
-        <div id="results"></div>
+        <div class="input-group">
+            <label for="turnoverRate">Expected Turnover Rate (%):</label>
+            <input type="range" id="turnoverRate" min="0" max="20" step="0.1" value="3" oninput="updatePrediction()">
+            <span id="turnoverRateValue">3%</span>
+        </div>
     </div>
 
     <script>
@@ -123,8 +120,8 @@
             { year: "2023-2024", totalStart: 3216, totalEnd: 3110, retention: "97%", scadTurnover: "3%", newHire: 433, peopleLeave: 106, growth: "8%" }
         ];
 
-        function populateHistoricalData() {
-            const table = document.getElementById('historicalData');
+        function populateData() {
+            const table = document.getElementById('dataTable');
             historicalData.forEach(row => {
                 const tr = table.insertRow();
                 Object.values(row).forEach(value => {
@@ -132,52 +129,52 @@
                     td.textContent = value;
                 });
             });
+            // Add prediction row
+            const predictionRow = table.insertRow();
+            predictionRow.id = 'predictionRow';
+            for (let i = 0; i < 8; i++) {
+                predictionRow.insertCell();
+            }
+            updatePrediction();
         }
 
-        function toggleHiringInput() {
-            const choice = document.getElementById('hiringChoice').value;
-            document.getElementById('hiringRateDiv').style.display = choice === 'rate' ? 'block' : 'none';
-            document.getElementById('hiringNumberDiv').style.display = choice === 'number' ? 'block' : 'none';
-        }
-
-        function updateHiringRate() {
-            document.getElementById('hiringRateValue').textContent = document.getElementById('hiringRate').value;
-        }
-
-        function updateTurnoverRate() {
-            document.getElementById('turnoverRateValue').textContent = document.getElementById('turnoverRate').value;
-        }
-
-        function predictEmployees() {
+        function updateHiringInputs() {
             const currentTotal = parseFloat(document.getElementById('currentTotal').value);
+            const hiringRate = parseFloat(document.getElementById('hiringRate').value);
+            const hiringNumber = Math.round(currentTotal * hiringRate / 100);
+
+            document.getElementById('hiringRateValue').textContent = hiringRate.toFixed(1) + '%';
+            document.getElementById('hiringNumber').value = hiringNumber;
+
+            updatePrediction();
+        }
+
+        function updatePrediction() {
+            const currentTotal = parseFloat(document.getElementById('currentTotal').value);
+            const hiringNumber = parseInt(document.getElementById('hiringNumber').value);
             const turnoverRate = parseFloat(document.getElementById('turnoverRate').value) / 100;
 
-            let newHires;
-            if (document.getElementById('hiringChoice').value === 'rate') {
-                const hiringRate = parseFloat(document.getElementById('hiringRate').value) / 100;
-                newHires = Math.round(currentTotal * hiringRate);
-            } else {
-                newHires = parseInt(document.getElementById('hiringNumber').value);
-            }
-
             const leavers = Math.round(currentTotal * turnoverRate);
-            const nextYearTotal = currentTotal + newHires - leavers;
+            const nextYearTotal = currentTotal + hiringNumber - leavers;
             const growthRate = ((nextYearTotal - currentTotal) / currentTotal * 100).toFixed(1);
+            const retentionRate = (100 - turnoverRate * 100).toFixed(1) + '%';
 
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `
-                <h3>Predictions for Next Year:</h3>
-                <p>New Hires: ${newHires}</p>
-                <p>Employees Leaving: ${leavers}</p>
-                <p>Total Employees: ${nextYearTotal}</p>
-                <p>Growth Rate: ${growthRate}%</p>
-            `;
+            const predictionRow = document.getElementById('predictionRow');
+            predictionRow.cells[0].textContent = "2024-2025 (Predicted)";
+            predictionRow.cells[1].textContent = currentTotal;
+            predictionRow.cells[2].textContent = nextYearTotal;
+            predictionRow.cells[3].textContent = retentionRate;
+            predictionRow.cells[4].textContent = turnoverRate * 100 + '%';
+            predictionRow.cells[5].textContent = hiringNumber;
+            predictionRow.cells[6].textContent = leavers;
+            predictionRow.cells[7].textContent = growthRate + '%';
+
+            document.getElementById('turnoverRateValue').textContent = (turnoverRate * 100).toFixed(1) + '%';
         }
 
         // Initialize the page
-        populateHistoricalData();
-        updateHiringRate();
-        updateTurnoverRate();
+        populateData();
+        updateHiringInputs();
     </script>
 </body>
 </html>
